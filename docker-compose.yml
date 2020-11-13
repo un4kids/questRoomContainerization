@@ -1,0 +1,58 @@
+version "0.1"
+
+
+networks:
+  quest_room_tier:
+    driver: bridge
+
+services:
+  srv:
+    container_name: quest_room_srv
+    env_file:
+      - ".env"
+    build:
+      context: ../questRoomSrv
+      dockerfile: Dockerfile
+      args:
+        PORT: ${QUEST_ROOM_SRV_PORT}
+        QUEST_ROOM_SRV_ENV: ${QUEST_ROOM_SRV_ENV}
+
+    volumes:
+      - ../questRoomSrv:/usr/src/app
+    environment:
+      PORT: ${QUEST_ROOM_SRV_PORT}
+      POSTGRES_HOST: "db"
+      POSTGRES_PORT: 5432
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "${QUEST_ROOM_SRV_PORT}:${QUEST_ROOM_SRV_PORT}"
+    depends_on:
+      - db
+    networks:
+      - quest_room_tier
+    restart: on-failure:5
+
+  webcli:
+    container_name: quest_room_webcli
+
+    build:
+      context: ../questRoomWebCli
+      dockerfile: Dockerfile
+      args:
+        ENV: ${QUEST_ROOM_WEBCLI_ENV}
+        PORT: 4200
+      volumes:
+        - ../questRoomWebCli
+      env_file:
+        - ".env"
+      environment:
+        ENV: ${QUEST_ROOM_WEBCLI_ENV}
+      ports:
+        - "${QUEST_ROOM_WEBCLI_PORT}:4200"
+      depends_on:
+        - srv
+      networks:
+        quest_room_tier
+      restart: on-failure:5
+
